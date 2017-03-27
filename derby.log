@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Mon Mar 27 15:39:19 CEST 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.13.1.1 - (1765088): instance a816c00e-015b-0ffe-0d36-000006ebefd8 
+on database directory memory:/Users/vanessavargas/Documents/EPITA/S8/Adv Java/AdvJavaRepo/iamcore/IAM with class loader sun.misc.Launcher$AppClassLoader@28d93b30 
+Loaded from file:/Users/vanessavargas/.m2/repository/org/apache/derby/derby/10.13.1.1/derby-10.13.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_111-b14
+user.dir=/Users/vanessavargas/Documents/EPITA/S8/Adv Java/AdvJavaRepo/iamcore
+os.name=Mac OS X
+os.arch=x86_64
+os.version=10.12.3
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
