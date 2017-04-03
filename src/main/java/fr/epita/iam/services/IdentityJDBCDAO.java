@@ -1,7 +1,6 @@
 package fr.epita.iam.services;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,8 +9,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-import java.util.Scanner;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.sql.DataSource;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,41 +27,16 @@ import fr.epita.iam.exceptions.DaoInitializationException;
 public class IdentityJDBCDAO {
   private Connection conn;
   private final File configFile = new File("Configs/DBConfig.xml"); 
+  
+  @Inject
+  @Named("dataSourceBean")
+  private DataSource ds;
+  
   private static final Logger LOGGER = LogManager.getLogger(IdentityJDBCDAO.class);
   
-  public IdentityJDBCDAO() {
-    try{
-      getConnection();
-    }catch(Exception e)
-    {
-      DaoInitializationException die = new DaoInitializationException("Unable to get a connetion to the Database.");
-      die.initCause(e);
-      throw die;
-    }
-  }
-
-  /**
-   * Make sure we have a working connection or create a new one.
-   * @return Connection to DB
-   * @throws SQLException
-   * @throws IOException 
-   */
-  private Connection getConnection() throws SQLException, IOException {
-    LOGGER.debug("=> getConnection start.");
-    try{
-      this.conn.getSchema();
-    }catch(Exception e)
-    {
-      LOGGER.debug("Preparing new connection because we could not get the schema. ", e.getMessage());
-      PropertiesReader propFile = new PropertiesReader("/dbconfig.properties");
-      String url = propFile.getProperty("jdbc.connection.string");
-      String user = propFile.getProperty("jdbc.connection.user");
-      String pass = propFile.getProperty("jdbc.connection.pass");
-      this.conn =  DriverManager.getConnection(url, user, pass);
-    }
-    LOGGER.debug("<= getConnection finnished with no problem.");
-    return this.conn;
-  }
+  private IdentityJDBCDAO() throws SQLException {
+	  
+	}
   
   /**
    * Release the connection resources
@@ -86,11 +62,11 @@ public class IdentityJDBCDAO {
   {
     LOGGER.debug("=> readAllIdentities");
     Connection connection;
-    List<Identity> listId = new ArrayList<>();
+    List<Identity> listId = new ArrayList<Identity>();
     DateFormatManager dfm = new DateFormatManager();
     PreparedStatement statement = null;
     try {
-     connection = getConnection();
+     connection = ds.getConnection();
     
      statement = connection.prepareStatement("SELECT * from Identities");
      ResultSet result = statement.executeQuery();
@@ -133,7 +109,7 @@ public class IdentityJDBCDAO {
     }
     
     try{
-      Connection connection = getConnection();
+      Connection connection = ds.getConnection();
       DateFormatManager dfm = new DateFormatManager();
     
       String sql = "INSERT INTO Identities (DisplayName, Email, Birthday) VALUES ( ?, ?, ?)";
@@ -172,7 +148,7 @@ public class IdentityJDBCDAO {
     PreparedStatement statement = null;
     
     try{
-      Connection connection = getConnection();
+      Connection connection = ds.getConnection();
     
       statement = connection.prepareStatement("SELECT * from Identities WHERE UId = ?");
       statement.setString(1, uid);
@@ -213,7 +189,7 @@ public class IdentityJDBCDAO {
     LOGGER.debug("=> updateIdentity : tracing the input : {}", id.toString());
     PreparedStatement statement = null;
     try{
-      Connection connection = getConnection();
+      Connection connection = ds.getConnection();
       DateFormatManager dfm = new DateFormatManager();
       String sql = "UPDATE Identities SET DisplayName = ?, Email = ?, Birthday = ? WHERE UId = ?";
       statement = connection.prepareStatement(sql);
@@ -249,7 +225,7 @@ public class IdentityJDBCDAO {
     LOGGER.debug("=> deleteIdentity : {}", id);
     PreparedStatement statement = null;
     try{
-    Connection connection = getConnection();
+    Connection connection = ds.getConnection();
       String sql = "DELETE FROM Identities WHERE UId = ?";
       statement = connection.prepareStatement(sql);
       statement.setString(1, id.getUid());

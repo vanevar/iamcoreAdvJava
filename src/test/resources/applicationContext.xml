@@ -1,0 +1,36 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+    
+    <bean name="dao" class="fr.epita.iam.services.IdentityJDBCDAO"/>
+    
+        <bean id="dataSourceConfig"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="dataSource.properties"></property>
+	</bean>
+
+     <bean id="dataSourceBean"
+         class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+         <property name="driverClassName" value="${jdbc.driver.name}" />
+         <property name="url" value="${jdbc.connection.string}" />
+         <property name="username" value="${jdbc.connection.username}" />
+         <property name="password" value="${jdbc.connection.password}" />
+     </bean>
+
+
+
+
+<!--     todo : use SpringPropertiesUtil Something to load the placeholders values below: 
+<util:properties id="dsConn" location="classpath:/dataSource.properties" />
+
+	<bean id="dataSourceBean"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="#{dsConn['jdbc.driver.name']}" />
+		<property name="url" value="#{dsConn['jdbc.connection.string']}" />
+		<property name="username" value="#{dsConn['jdbc.connection.username']}" />
+		<property name="password" value="#{dsConn['jdbc.connection.password']}" />
+	</bean>
+
+-->
+</beans>
