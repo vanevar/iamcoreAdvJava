@@ -1,19 +1,18 @@
 package fr.epita.iam.iamcore.test;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -25,19 +24,21 @@ import fr.epita.iam.services.IdentityJDBCDAO;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations="classpath:applicationContext.xml")
+@ContextConfiguration(locations={"/applicationContext.xml"})
 public class TestJDBC {
   @Inject
   IdentityJDBCDAO dao;
   
+  @Inject
+  DataSource ds;
+  
   private static final Logger LOGGER = LogManager.getLogger(TestLog4j2Usage.class);
+  private boolean initialized = false;
 
-  @BeforeClass
-  public static void globalSetup() throws SQLException{
+  public void globalSetup() throws SQLException{
     LOGGER.info("Before class initialization.");
     
-    Connection connection = DriverManager.getConnection(
-        "jdbc:derby:memory:IAM;create=true", "admin", "admin");
+    Connection connection = ds.getConnection();
     PreparedStatement pstmt = connection.prepareStatement("CREATE TABLE Identities( "
         + "UId INT NOT NULL GENERATED ALWAYS AS IDENTITY CONSTRAINT Identity_PK PRIMARY KEY,"
         + "DisplayName VARCHAR(255),"
@@ -53,9 +54,15 @@ public class TestJDBC {
     LOGGER.info("Before class initialization DONE.");
   }
   
+  
   @Before
-  public void setUp()
+  public void setUp() throws SQLException
   {
+    if (!initialized)
+    {
+    //globalSetup();
+      initialized = true;
+    }
     LOGGER.info("Before test setup.");
   }
   
@@ -67,7 +74,7 @@ public class TestJDBC {
   @Test
   public void testWriteIdentity(){
     DateFormatManager dfm = new DateFormatManager();
-    Identity id = new Identity("Carlos Diez", "2", "cdm@gmailcom", dfm.dateFromString("1980-12-24"));
+    Identity id = new Identity("Carlos Diez", "39", "cdm@gmailcom", dfm.dateFromString("1980-12-24"));
     dao.writeIdentity(id);
     
     List<String> names = new ArrayList<String>();

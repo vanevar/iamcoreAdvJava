@@ -1,9 +1,6 @@
 package fr.epita.iam.services;
 
-import java.io.File;
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,8 +22,6 @@ import fr.epita.iam.exceptions.DaoInitializationException;
  * This class manages the Identity - DB connection and queries.
  */
 public class IdentityJDBCDAO {
-  private Connection conn;
-  private final File configFile = new File("Configs/DBConfig.xml"); 
   
   @Inject
   @Named("dataSourceBean")
@@ -41,10 +36,10 @@ public class IdentityJDBCDAO {
   /**
    * Release the connection resources
    */
-  private void releaseResources() {
+  private void releaseResources(Connection conn) {
     LOGGER.debug("=> releaseResources");
     try{
-      this.conn.close();
+      conn.close();
     }catch(Exception e){
       DaoInitializationException die = new DaoInitializationException("Unable to close the connection to the database.");
       die.initCause(e);
@@ -79,7 +74,7 @@ public class IdentityJDBCDAO {
        Identity id = new Identity(displayName, uId, email, dfm.dateFromString(birthdate));
        listId.add(id);
         }
-      this.releaseResources();
+      this.releaseResources(connection);
     } catch (Exception e) {
       DaoInitializationException die = new DaoInitializationException("A problem was found during the read of all identities.");
       die.initCause(e);
@@ -119,7 +114,7 @@ public class IdentityJDBCDAO {
       statement.setString(3, dfm.stringFromDate(id.getBirthdate()));
   
       statement.execute();
-      this.releaseResources();
+      this.releaseResources(connection);
     } catch (Exception e) {
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to save the identity on the database.");
       die.initCause(e);
@@ -161,7 +156,7 @@ public class IdentityJDBCDAO {
         String birthdate = result.getString("Birthday");
         id = new Identity(displayName, uId, email, dfm.dateFromString(birthdate));
       }
-      this.releaseResources();
+      this.releaseResources(connection);
     } catch (Exception e)
     {
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to read the identity to the database.");
@@ -199,7 +194,7 @@ public class IdentityJDBCDAO {
       statement.setString(4, id.getUid());
     
       statement.execute();
-      this.releaseResources();
+      this.releaseResources(connection);
     } catch (Exception e) {
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to update the identity to the database.");
       die.initCause(e);
@@ -231,7 +226,7 @@ public class IdentityJDBCDAO {
       statement.setString(1, id.getUid());
     
       statement.execute();
-      this.releaseResources();
+      this.releaseResources(connection);
     }  catch (Exception e) {
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to remove the identity from the database");
       die.initCause(e);
