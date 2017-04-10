@@ -18,7 +18,18 @@
          <property name="password" value="${jdbc.connection.password}" />
      </bean>
 
-
+     <bean id="sFactory"
+       class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+       <property name="dataSource" ref="dataSourceBean" />
+       <property name="packagesToScan" value="fr.epita.iam.datamodel" />
+       <property name="hibernateProperties">
+         <props>
+           <prop key="hiberate.dialect">org.hibernate.dialect.DerbyTenSevenDialect</prop>
+           <prop key="hibernate.hbm2ddl.auto">update</prop>
+           <prop key="hibernate.show_sql">true</prop>
+         </props>
+       </property>
+     </bean>
 
 
 <!--     todo : use SpringPropertiesUtil Something to load the placeholders values below: 

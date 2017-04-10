@@ -67,7 +67,7 @@ public class IdentityHibernateDAO {
      ResultSet result = statement.executeQuery();
     
      while(result.next()){
-       String uId = result.getString("Uid");
+       long uId = result.getLong("Uid");
        String displayName = result.getString("DisplayName");
        String email = result.getString("Email");
        String birthdate = result.getString("Birthday");
@@ -150,7 +150,7 @@ public class IdentityHibernateDAO {
       ResultSet result = statement.executeQuery();
     
       while(result.next()){
-        String uId = result.getString("Uid");
+        long uId = result.getLong("Uid");
         String displayName = result.getString("DisplayName");
         String email = result.getString("Email");
         String birthdate = result.getString("Birthday");
@@ -191,7 +191,7 @@ public class IdentityHibernateDAO {
       statement.setString(1, id.getDisplayName());
       statement.setString(2, id.getEmail());
       statement.setString(3, dfm.stringFromDate(id.getBirthdate()));
-      statement.setString(4, id.getUid());
+      statement.setLong(4, id.getUid());
     
       statement.execute();
       this.releaseResources(connection);
@@ -223,7 +223,7 @@ public class IdentityHibernateDAO {
     Connection connection = ds.getConnection();
       String sql = "DELETE FROM Identities WHERE UId = ?";
       statement = connection.prepareStatement(sql);
-      statement.setString(1, id.getUid());
+      statement.setLong(1, id.getUid());
     
       statement.execute();
       this.releaseResources(connection);

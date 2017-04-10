@@ -1,13 +1,32 @@
 package fr.epita.iam.datamodel;
 
 import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Column;
+import javax.persistence.Table;
+
 import fr.epita.iam.services.DateFormatManager;
 
+@Entity
+@Table(name="Identities")
 public class Identity {
   // Properties
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name="UId")
+  private long uid;
+  
+  @Column(name="DisplayName")
   private String displayName;
-  private String uid; 
+
+  @Column(name="Email")
   private String email;
+  
+  @Column(name="Birthday")
   private Date birthdate;
   
   //Constructors
@@ -15,7 +34,7 @@ public class Identity {
     //Mandatory constructor
   }
   
-  public Identity( String displayName, String uid, String email, Date birthdate){
+  public Identity( String displayName, long uid, String email, Date birthdate){
     this.displayName = displayName;
     this.uid = uid;
     this.email = email;
@@ -29,10 +48,10 @@ public class Identity {
   public void setDisplayName(String displayName) {
     this.displayName = displayName;
   }
-  public String getUid() {
+  public long getUid() {
     return uid;
   }
-  public void setUid(String uid) {
+  public void setUid(long uid) {
     this.uid = uid;
   }
   public String getEmail() {
