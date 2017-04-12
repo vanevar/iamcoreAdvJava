@@ -6,7 +6,6 @@ import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,6 +15,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import fr.epita.iam.datamodel.Identity;
 import fr.epita.iam.services.DateFormatManager;
+import fr.epita.iam.services.IdentityHibernateDAO;
 import fr.epita.iam.services.IdentityJDBCDAO;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -25,6 +25,9 @@ public class TestHibernateDAO {
   private static final Logger LOGGER = LogManager.getLogger(TestHibernateDAO.class);
   
   @Inject
+  IdentityHibernateDAO hibernateDao;
+  
+  @Inject
   SessionFactory sFactory;
   
   @Inject
@@ -32,58 +35,33 @@ public class TestHibernateDAO {
   
   @Test
   public void testHibernate(){
-    List<Identity> identities = dao.readAllIdentities();
-    int originalSize = identities.size();
+    List<Identity> identities = hibernateDao.readAllIdentities();
     
     LOGGER.info("Before : {} ", identities);
     
-    Session session = sFactory.openSession();
     DateFormatManager dfm = new DateFormatManager();
     Identity id = new Identity("Carlos Diez", 0, "cdm@gmailcom", dfm.dateFromString("1980-12-24"));
-    session.saveOrUpdate(id);
+    hibernateDao.writeIdentity(id);
     
-    identities = dao.readAllIdentities();
-    LOGGER.info("After : {}", identities);
-    
-    Assert.assertEquals(identities.size(), originalSize + 1);
-  }
-  
-  
-  
-  /*
-   * 
-   * 
-  @Test 
-  public void readAll(){
-    Session session = sFactory.openSession();
-    List<Identity> identities = session.createQuery("from Identities").list();
-    for(Identity id : identities)
+    identities = hibernateDao.readAllIdentities();
+    for(Identity id2 : identities)
     {
-      System.out.println(id.toString());
+      System.out.println(id2.toString());
      }
-    Assert.assertTrue(!identities.isEmpty());
-  }
-  @Test
-  public void HibernateSession(){
-    SessionFactory session = new Configuration().configure().buildSessionFactory();
-    Assert.assertNotNull(session);
-  }
+    LOGGER.info("Search by Id");
+    System.out.println(hibernateDao.readIdentity(1).toString());
+    LOGGER.info("Search by Display Name");    
+    System.out.println(hibernateDao.findByDisplayName("c").toString());
+    
+    LOGGER.info("Update Identity");    
+    id = hibernateDao.findByDisplayName("c");
+    id.setDisplayName("Pepe");
+    hibernateDao.updateIdentity(id);
+    System.out.println(hibernateDao.findByDisplayName("p").toString());
+    
+    LOGGER.info("Delete Identity");    
+    hibernateDao.deleteIdentity(id);
+    Assert.assertTrue(hibernateDao.readAllIdentities().isEmpty());
   
-  @Test
-  public void insertIdentity(){
-    DateFormatManager dfm = new DateFormatManager();
-    IdentityH id = new IdentityH("Carlos Diez", 0, "cdm@gmailcom", dfm.dateFromString("1980-12-24"));
-    
-    SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
-    Session session = sessionFactory.openSession();
-    
-    session.beginTransaction();
-    session.save(id);
-    session.getTransaction().commit();
-    
-    session.close();
   }
- 
-  
-  */
 }

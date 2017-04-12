@@ -5,6 +5,9 @@
     
     <bean name="dao" class="fr.epita.iam.services.IdentityJDBCDAO"/>
     
+    <bean name="hibernateDao" class="fr.epita.iam.services.IdentityHibernateDAO"/>
+    
+    
     <bean id="dataSourceConfig"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location" value="dataSource.properties"></property>

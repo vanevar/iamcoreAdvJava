@@ -1,18 +1,18 @@
 package fr.epita.iam.services;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.sql.DataSource;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
 import fr.epita.iam.datamodel.Identity;
 import fr.epita.iam.exceptions.DaoInitializationException;
@@ -24,8 +24,8 @@ import fr.epita.iam.exceptions.DaoInitializationException;
 public class IdentityHibernateDAO {
   
   @Inject
-  @Named("dataSourceBean")
-  private DataSource ds;
+  @Named("sFactory")
+  private SessionFactory sf;
   
   private static final Logger LOGGER = LogManager.getLogger(IdentityHibernateDAO.class);
   
@@ -34,19 +34,33 @@ public class IdentityHibernateDAO {
 	}
   
   /**
-   * Release the connection resources
-   */
-  private void releaseResources(Connection conn) {
-    LOGGER.debug("=> releaseResources");
-    try{
-      conn.close();
-    }catch(Exception e){
-      DaoInitializationException die = new DaoInitializationException("Unable to close the connection to the database.");
-      die.initCause(e);
-      throw die;
-    }
-    LOGGER.debug("<= releaseResources");
+ * Persist an identity into the DB
+ * @param id
+ * @throws DaoInitializationException
+ */
+public void writeIdentity( Identity id ) 
+{
+  LOGGER.debug("=> writeIdentity : tracing the input : {}", id.toString());
+
+  Session session = null;
+  try {
+    session = sf.openSession();
+    session.save(id);
+  } catch (Exception e) {
+    DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to save the identity on the database.");
+    die.initCause(e);
+    throw die;
+  } finally {
+    if (session != null)
+      try {
+        session.close();
+      } catch (Exception e) {
+        LOGGER.error("FAILED: writeIdentity Statement close. {}", e);
+      }
   }
+  LOGGER.debug("<= writeIdentity : Leaving method with no error.");
+}
+  
   
   /**
    * Read all identities persisted on the DB
@@ -56,124 +70,106 @@ public class IdentityHibernateDAO {
   public List<Identity> readAllIdentities() 
   {
     LOGGER.debug("=> readAllIdentities");
-    Connection connection;
+    Session session = null;
     List<Identity> listId = new ArrayList<Identity>();
-    DateFormatManager dfm = new DateFormatManager();
-    PreparedStatement statement = null;
     try {
-     connection = ds.getConnection();
+     session = sf.openSession();
     
-     statement = connection.prepareStatement("SELECT * from Identities");
-     ResultSet result = statement.executeQuery();
-    
-     while(result.next()){
-       long uId = result.getLong("Uid");
-       String displayName = result.getString("DisplayName");
-       String email = result.getString("Email");
-       String birthdate = result.getString("Birthday");
-       Identity id = new Identity(displayName, uId, email, dfm.dateFromString(birthdate));
-       listId.add(id);
-        }
-      this.releaseResources(connection);
+     Query query = session.createQuery("from Identity");
+     listId = query.list();
     } catch (Exception e) {
       DaoInitializationException die = new DaoInitializationException("A problem was found during the read of all identities.");
       die.initCause(e);
       throw die;
     } finally {
-      if (statement != null)
+      if (session != null)
         try {
-          statement.close();
-        } catch (SQLException e) {
+          session.close();
+        } catch (Exception e) {
           LOGGER.error("FAILED: readAllIdentities {}", e);
         }
     }
     return LOGGER.traceExit("<= readAllIdentites : {}", listId);
   }
   
-  /**
-   * Persist an identity into the DB
-   * @param id
-   * @throws DaoInitializationException
-   */
-  public void writeIdentity( Identity id ) 
-  {
-    LOGGER.debug("=> writeIdentity : tracing the input : {}", id.toString());
-    PreparedStatement statement = null;
-    if(alreadyExists(id)){
-      throw new DaoInitializationException("This identity already exists.");
-    }
-    
-    try{
-      Connection connection = ds.getConnection();
-      DateFormatManager dfm = new DateFormatManager();
-    
-      String sql = "INSERT INTO Identities (DisplayName, Email, Birthday) VALUES ( ?, ?, ?)";
-      statement = connection.prepareStatement(sql);
-      statement.setString(1, id.getDisplayName());
-      statement.setString(2, id.getEmail());
-      statement.setString(3, dfm.stringFromDate(id.getBirthdate()));
   
-      statement.execute();
-      this.releaseResources(connection);
-    } catch (Exception e) {
-      DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to save the identity on the database.");
-      die.initCause(e);
-      throw die;
-    } finally {
-      if (statement != null)
-        try {
-          statement.close();
-        } catch (SQLException e) {
-          LOGGER.error("FAILED: writeIdentity Statement close. {}", e);
-        }
-    }
-    LOGGER.debug("<= writeIdentity : Leaving method with no error.");
-  }
   
   /**
    * Read one identity from the DB based on the uid for the identity
    * @param uid 
-   * @throws SQLException
+   * @throws DaoInitializationException
    */
-  public Identity readIdentity(String uid) 
+  public Identity readIdentity(long uid) 
   {
     LOGGER.debug("=> readIdentity : tracing the input : {}", uid);
-    DateFormatManager dfm = new DateFormatManager();
     Identity id = new Identity();  
-    PreparedStatement statement = null;
+    Session session = null;
     
     try{
-      Connection connection = ds.getConnection();
-    
-      statement = connection.prepareStatement("SELECT * from Identities WHERE UId = ?");
-      statement.setString(1, uid);
-      ResultSet result = statement.executeQuery();
-    
-      while(result.next()){
-        long uId = result.getLong("Uid");
-        String displayName = result.getString("DisplayName");
-        String email = result.getString("Email");
-        String birthdate = result.getString("Birthday");
-        id = new Identity(displayName, uId, email, dfm.dateFromString(birthdate));
+      session = sf.openSession();
+      String statement = "from Identity i where i.uid = :id";
+      List<Identity> identities = session.createQuery(statement).setLong("id", uid).list();
+      if(identities.isEmpty())
+      {
+        LOGGER.info("No identity found for the given UId");
+        throw new Exception("No record found in database");
       }
-      this.releaseResources(connection);
+        id = identities.get(0);
     } catch (Exception e)
     {
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to read the identity to the database.");
       die.initCause(e);
       throw die;
     } finally {
-      if (statement != null)
+      if (session != null)
         try {
-          statement.close();
-        } catch (SQLException e) {
+          session.close();
+        } catch (Exception e) {
           LOGGER.error("FAILED: readIdentity close connection. {}", e);
         }
     }
 
     return LOGGER.traceExit("<= readIdentity : {}", id);
   }
-  
+
+  /**
+   * Find all Identities where the given display name could match
+   * @param displayName 
+   * @throws DaoInitializationException
+   */
+  public Identity findByDisplayName(String displayName) 
+  {
+    LOGGER.debug("=> readIdentity : tracing the input : {}", displayName);
+    Identity id = new Identity();  
+    Session session = null;
+    
+    try{
+      session = sf.openSession();
+      String statement = "from Identity i where lower(i.displayName) like lower(:dispName)";
+      List<Identity> identities = session.createQuery(statement).setParameter("dispName", "%"+displayName+"%").list();
+      if(identities.isEmpty())
+      {
+        LOGGER.info("No identity found containing "+ displayName +" as part of the Display Name");
+        throw new Exception("No record found in database");
+      }
+        id = identities.get(0);
+    } catch (Exception e)
+    {
+      DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to read the identity to the database.");
+      die.initCause(e);
+      throw die;
+    } finally {
+      if (session != null)
+        try {
+          session.close();
+        } catch (Exception e) {
+          LOGGER.error("FAILED: readIdentity close connection. {}", e);
+        }
+    }
+
+    return LOGGER.traceExit("<= readIdentity : {}", id);
+  }
+    
   /**
    * Update the passed identity on the DB, the update is done based on the uid
    * @param id
@@ -182,28 +178,26 @@ public class IdentityHibernateDAO {
   public void updateIdentity( Identity id ) 
   {
     LOGGER.debug("=> updateIdentity : tracing the input : {}", id.toString());
-    PreparedStatement statement = null;
+    Transaction tx = null;
+    Session session = null;
     try{
-      Connection connection = ds.getConnection();
-      DateFormatManager dfm = new DateFormatManager();
-      String sql = "UPDATE Identities SET DisplayName = ?, Email = ?, Birthday = ? WHERE UId = ?";
-      statement = connection.prepareStatement(sql);
-      statement.setString(1, id.getDisplayName());
-      statement.setString(2, id.getEmail());
-      statement.setString(3, dfm.stringFromDate(id.getBirthdate()));
-      statement.setLong(4, id.getUid());
-    
-      statement.execute();
-      this.releaseResources(connection);
+      session = sf.openSession();
+      tx = session.beginTransaction();
+      session.update(id);
+      tx.commit();
     } catch (Exception e) {
+      if(tx != null)
+      {
+        tx.rollback();
+      }
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to update the identity to the database.");
       die.initCause(e);
       throw die;
     } finally {
-      if (statement != null)
+      if (session != null)
         try {
-          statement.close();
-        } catch (SQLException e) {
+          session.close();
+        } catch (Exception e) {
           LOGGER.error("FAILED: updateIdentity. {}", e);
         }
     }
@@ -218,38 +212,40 @@ public class IdentityHibernateDAO {
   public void deleteIdentity( Identity id ) 
   {
     LOGGER.debug("=> deleteIdentity : {}", id);
-    PreparedStatement statement = null;
+    Session session = null;
+    Transaction tx = null;
     try{
-    Connection connection = ds.getConnection();
-      String sql = "DELETE FROM Identities WHERE UId = ?";
-      statement = connection.prepareStatement(sql);
-      statement.setLong(1, id.getUid());
-    
-      statement.execute();
-      this.releaseResources(connection);
+      session = sf.openSession();
+      tx = session.beginTransaction();
+      session.delete(id);
+      tx.commit();
     }  catch (Exception e) {
+      if(tx != null)
+      {
+        tx.rollback();
+      }
       DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to remove the identity from the database");
       die.initCause(e);
       throw die;
     }finally {
-      if (statement != null)
+      if (session != null)
         try {
-          statement.close();
-        } catch (SQLException e) {
+          session.close();
+        } catch (Exception e) {
           LOGGER.error("FAILED: deleteIdentity. {}", e);
         }
     }
     LOGGER.debug("<= deleteIdentity");
   }
-
-  private Boolean alreadyExists(Identity id){
-    for(Identity id2 : readAllIdentities())
-    {
-      if (id.getDisplayName().equals(id2.getDisplayName()) &&
-          id.getEmail().equals(id2.getEmail()) &&
-          id.getBirthdate().equals(id2.getBirthdate()))
-          return true;
-    }
-    return false;
-  }
+//
+//  private Boolean alreadyExists(Identity id){
+//    for(Identity id2 : readAllIdentities())
+//    {
+//      if (id.getDisplayName().equals(id2.getDisplayName()) &&
+//          id.getEmail().equals(id2.getEmail()) &&
+//          id.getBirthdate().equals(id2.getBirthdate()))
+//          return true;
+//    }
+//    return false;
+//  }
 }
