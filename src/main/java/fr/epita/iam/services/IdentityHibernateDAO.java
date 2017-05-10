@@ -21,7 +21,7 @@ import fr.epita.iam.exceptions.DaoInitializationException;
  * @author vanessavargas
  * This class manages the Identity - DB connection and queries.
  */
-public class IdentityHibernateDAO {
+public class IdentityHibernateDAO implements Dao<Identity>{
   
   @Inject
   @Named("sFactory")
@@ -38,7 +38,7 @@ public class IdentityHibernateDAO {
  * @param id
  * @throws DaoInitializationException
  */
-public void writeIdentity( Identity id ) 
+public void write( Identity id ) 
 {
   LOGGER.debug("=> writeIdentity : tracing the input : {}", id.toString());
 
@@ -67,7 +67,7 @@ public void writeIdentity( Identity id )
    * @return
    * @throws DaoInitializationException
    */
-  public List<Identity> readAllIdentities() 
+  public List<Identity> readAll() 
   {
     LOGGER.debug("=> readAllIdentities");
     Session session = null;
@@ -99,7 +99,7 @@ public void writeIdentity( Identity id )
    * @param uid 
    * @throws DaoInitializationException
    */
-  public Identity readIdentity(long uid) 
+  public Identity read(long uid) 
   {
     LOGGER.debug("=> readIdentity : tracing the input : {}", uid);
     Identity id = new Identity();  
@@ -175,7 +175,7 @@ public void writeIdentity( Identity id )
    * @param id
    * @throws DaoInitializationException
    */
-  public void updateIdentity( Identity id ) 
+  public void update( Identity id ) 
   {
     LOGGER.debug("=> updateIdentity : tracing the input : {}", id.toString());
     Transaction tx = null;
@@ -209,9 +209,9 @@ public void writeIdentity( Identity id )
    * @param id
    * @throws DaoInitializationException
    */
-  public void deleteIdentity( Identity id ) 
+  public void delete( Identity id ) 
   {
-    LOGGER.debug("=> deleteIdentity : {}", id);
+    LOGGER.debug("=> deleteIdentity : tracing the input : {}", id);
     Session session = null;
     Transaction tx = null;
     try{
@@ -237,6 +237,37 @@ public void writeIdentity( Identity id )
     }
     LOGGER.debug("<= deleteIdentity");
   }
+  
+  public List<Identity> search(Identity identity)
+  {
+    LOGGER.debug("=> searchIdentity : tracing the input : {}", identity);
+    Session session = null;
+    List<Identity> identityList = null;
+    try{
+      WhereBuilder wb = new WhereBuilder();
+      session = sf.openSession();
+      Query query = wb.identityWhere(session, identity);
+      identityList = query.list();
+      if(identityList.isEmpty())
+      {
+        LOGGER.info("No Identity found with the given criteria.");
+      }
+    } catch(Exception e){
+      DaoInitializationException die = new DaoInitializationException("A problem was encountered when trying to read the identity to the database.");
+      die.initCause(e);
+      throw die;
+    } finally {
+      if (session != null)
+        try {
+          session.close();
+        } catch (Exception e) {
+          LOGGER.error("FAILED: readIdentity close connection. {}", e);
+        }
+    }
+    LOGGER.debug("<= searchIdentity : Leaving with no errors");
+    return identityList;
+  }
+  
 //
 //  private Boolean alreadyExists(Identity id){
 //    for(Identity id2 : readAllIdentities())

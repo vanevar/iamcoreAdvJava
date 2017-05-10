@@ -5,7 +5,9 @@
     
     <bean name="dao" class="fr.epita.iam.services.IdentityJDBCDAO"/>
     
-    <bean name="hibernateDao" class="fr.epita.iam.services.IdentityHibernateDAO"/>
+    <bean name="identityDao" class="fr.epita.iam.services.IdentityHibernateDAO"/>
+    
+    <bean name="addressDao" class="fr.epita.iam.services.AddressHibernateDAO"/>
     
     
     <bean id="dataSourceConfig"

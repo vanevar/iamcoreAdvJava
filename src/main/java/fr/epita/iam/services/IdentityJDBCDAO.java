@@ -71,7 +71,7 @@ public class IdentityJDBCDAO {
        String displayName = result.getString("DisplayName");
        String email = result.getString("Email");
        String birthdate = result.getString("Birthday");
-       Identity id = new Identity(displayName, uId, email, dfm.dateFromString(birthdate));
+       Identity id = new Identity(displayName, email, dfm.dateFromString(birthdate), null);
        listId.add(id);
         }
       this.releaseResources(connection);
@@ -154,7 +154,7 @@ public class IdentityJDBCDAO {
         String displayName = result.getString("DisplayName");
         String email = result.getString("Email");
         String birthdate = result.getString("Birthday");
-        id = new Identity(displayName, uId, email, dfm.dateFromString(birthdate));
+        id = new Identity(displayName, email, dfm.dateFromString(birthdate), null);
       }
       this.releaseResources(connection);
     } catch (Exception e)

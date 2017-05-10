@@ -74,7 +74,7 @@ public class TestJDBC {
   @Test
   public void testWriteIdentity(){
     DateFormatManager dfm = new DateFormatManager();
-    Identity id = new Identity("Carlos Diez", 39, "cdm@gmailcom", dfm.dateFromString("1980-12-24"));
+    Identity id = new Identity("Carlos Diez", "cdm@gmailcom", dfm.dateFromString("1980-12-24"), null);
     dao.writeIdentity(id);
     
     List<String> names = new ArrayList<String>();

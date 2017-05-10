@@ -1,12 +1,15 @@
 package fr.epita.iam.datamodel;
 
 import java.util.Date;
+import java.util.List;
 
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Column;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import fr.epita.iam.services.DateFormatManager;
@@ -29,16 +32,19 @@ public class Identity {
   @Column(name="Birthday")
   private Date birthdate;
   
+//  @OneToMany(mappedBy="identity", cascade = CascadeType.ALL)
+//  private List<Address> addresses;
+  
   //Constructors
   public Identity (){
     //Mandatory constructor
   }
   
-  public Identity( String displayName, long uid, String email, Date birthdate){
+  public Identity( String displayName, String email, Date birthdate, List<Address> addresses){
     this.displayName = displayName;
-    this.uid = uid;
     this.email = email;
     this.birthdate = birthdate;
+    //this.addresses = addresses;
   }
   
   // Getters & Setters
@@ -51,9 +57,7 @@ public class Identity {
   public long getUid() {
     return uid;
   }
-  public void setUid(long uid) {
-    this.uid = uid;
-  }
+
   public String getEmail() {
     return email;
   }
@@ -67,13 +71,25 @@ public class Identity {
     this.birthdate = birthdate;
   }
   
+//  public List<Address> getAddresses() {
+//    return addresses;
+//  }
 
   
   @Override
   public String toString()
   {
     DateFormatManager dfm = new DateFormatManager();
-    return "Identity [ uid = " + this.uid + ", displayName = " + this.displayName +  
-        ", email = " + this.email + ", birthdate = " + dfm.stringFromDate(this.birthdate) + " ]";
+    String identity = "Identity [ uid = " + this.uid + ", displayName = " + this.displayName +  
+        ", email = " + this.email + ", birthdate = " + dfm.stringFromDate(this.birthdate);
+//    if(!this.addresses.isEmpty()){
+//      for(Address addr : this.addresses)
+//      {
+//        identity += ", Addresses: " + addr.toString();
+//      }
+//    }
+//    
+    return identity + "]";
+        
   }
 }

@@ -20,6 +20,6 @@ public class TestSpring {
   
   @Test
   public void testSpringContext(){
-    dao.writeIdentity(new Identity("TB", 1, "mail@.com", new Date()));
+    dao.writeIdentity(new Identity("TB", "mail@.com", new Date(), null));
   }
 }
